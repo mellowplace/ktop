@@ -3,14 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 
-	"github.com/davecgh/go-spew/spew"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/tools/clientcmd"
-	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
+	"github.com/mellowplace/ktop/internal/app/ktop"
 )
 
 func main() {
@@ -28,28 +25,11 @@ func main() {
 
 	// use the current context in kubeconfig
 
-	config, err := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(
-		&clientcmd.ClientConfigLoadingRules{ExplicitPath: *kubeConfig},
-		&clientcmd.ConfigOverrides{
-			ClusterInfo:    clientcmdapi.Cluster{Server: ""},
-			CurrentContext: *kubeContext,
-		}).ClientConfig()
+	err := ktop.StartUI(*kubeConfig, *kubeContext, "kube-system")
 
 	if err != nil {
-		panic(err.Error())
+		log.Fatalf("%v", err)
 	}
-
-	// create the clientset
-	metricsClient, err := metricsclientset.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
-
-	metrics, err := metricsClient.MetricsV1beta1().PodMetricses("kube-system").List(v1.ListOptions{})
-	if err != nil {
-		panic(err.Error())
-	}
-	spew.Dump(metrics)
 }
 
 func homeDir() string {
