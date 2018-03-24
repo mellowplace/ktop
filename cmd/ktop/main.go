@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"k8s.io/client-go/kubernetes"
+	"github.com/davecgh/go-spew/spew"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
+	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
 )
 
 func main() {
@@ -38,10 +40,16 @@ func main() {
 	}
 
 	// create the clientset
-	_, err = kubernetes.NewForConfig(config)
+	metricsClient, err := metricsclientset.NewForConfig(config)
 	if err != nil {
 		panic(err.Error())
 	}
+
+	metrics, err := metricsClient.MetricsV1beta1().PodMetricses("kube-system").List(v1.ListOptions{})
+	if err != nil {
+		panic(err.Error())
+	}
+	spew.Dump(metrics)
 }
 
 func homeDir() string {

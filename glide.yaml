@@ -2,3 +2,6 @@ package: github.com/mellowplace/ktop
 import:
 - package: k8s.io/client-go
   version: v6.0.0
+- package: k8s.io/metrics
+- package: github.com/davecgh/go-spew
+  version: ~1.1.0

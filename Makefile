@@ -8,3 +8,6 @@ install-deps:
 
 build:
 	go build -o ./bin/ktop ./cmd/ktop/main.go
+
+install:
+	go install ./cmd/...
