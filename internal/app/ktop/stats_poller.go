@@ -6,11 +6,10 @@ import (
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/tools/clientcmd"
 	clientcmdapi "k8s.io/client-go/tools/clientcmd/api"
-	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
 )
 
-func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, metricsClose chan int, metricsReceive chan *metrics.PodMetricsList, errorChan chan error) {
+func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, metricsClose chan int, metricsReceive chan *SimplifiedPodMetricsList, errorChan chan error) {
 
 	defer close(metricsReceive)
 	defer close(errorChan)
@@ -31,7 +30,7 @@ func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, metricsCl
 			if err != nil {
 				errorChan <- err
 			} else {
-				metricsReceive <- list
+				metricsReceive <- NewSimplifiedPodMetricsList(list)
 			}
 		}
 	}

@@ -3,18 +3,17 @@ package ktop
 import (
 	"fmt"
 	"log"
+	"strconv"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/jroimartin/gocui"
-	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
 var (
-	metricsClose                           = make(chan int, 1)
-	metricsReceive                         = make(chan *metrics.PodMetricsList, 1)
-	errorChan                              = make(chan error, 1)
-	podMetricsList *metrics.PodMetricsList = &metrics.PodMetricsList{}
+	metricsClose                             = make(chan int, 1)
+	metricsReceive                           = make(chan *SimplifiedPodMetricsList, 1)
+	errorChan                                = make(chan error, 1)
+	podMetricsList *SimplifiedPodMetricsList = &SimplifiedPodMetricsList{}
 )
 
 func StartUI(kubeConfigFile, kubeContextName, namespace string) error {
@@ -50,13 +49,14 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			if open == false {
 				return
 			}
-			podMetricsList = list.DeepCopy()
+			podMetricsList = list
 		case err := <-errorChan:
 			g.Update(func(g *gocui.Gui) error {
 				return err
 			})
 			return
 		}
+
 		g.Update(func(g *gocui.Gui) error {
 			v, err := g.View("main")
 			if err != nil {
@@ -64,13 +64,17 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 			v.Clear()
 
-			for _, item := range podMetricsList.Items {
-				fmt.Fprintf(v, "%s ", item.GetName())
-				labels := item.GetLabels()
-				for labelName, label := range labels {
-					fmt.Fprintf(v, "%s %s\n", labelName, label)
+			maxX, _ := g.Size()
+			format := "%50s %10s %10s %15s %15s"
+			formatHeader := format + "%" + strconv.FormatInt(int64(maxX), 10) + "s\n"
+			v.Highlight = true
+			v.SelBgColor = gocui.ColorGreen
 
-				}
+			fmt.Fprintf(v, formatHeader, "Name", "CPU (used)", "CPU (limit)", "Memory (used)", "Memory (limit)", " ")
+
+			podMetricsList.OrderByHighestMemUsage()
+			for _, item := range podMetricsList.Pods {
+				fmt.Fprintf(v, format+"\n", item.PodName, item.CPUMillisString(), "-", item.MemoryBytesString(), "-")
 			}
 			return nil
 		})
@@ -80,12 +84,24 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("main", -1, -1, maxX, maxY); err != nil {
+
+	if v, err := g.SetView("totals", -1, -1, maxX, 5); err != nil {
 
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-		spew.Fdump(v, *podMetricsList)
+
+		format := "%40s %s\n"
+		fmt.Fprintf(v, format, "Total Nodes in Cluster:", "5")
+		fmt.Fprintf(v, format, "Total Memory Available:", "50GB")
+		fmt.Fprintf(v, format, "Total CPU Available:", "20")
+	}
+
+	if _, err := g.SetView("main", -1, 5, maxX, maxY); err != nil {
+
+		if err != gocui.ErrUnknownView {
+			return err
+		}
 	}
 
 	return nil
