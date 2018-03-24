@@ -62,6 +62,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 		g.Update(func(g *gocui.Gui) error {
 
 			v, err := g.View("totals")
+
 			if err != nil {
 				return err
 			}
@@ -79,9 +80,10 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			// to get the highlight all the way across
 			formatHeader := format + "%" + strconv.FormatInt(int64(maxX), 10) + "s\n"
 			v.Highlight = true
-			v.SelBgColor = gocui.ColorGreen
+			v.SelFgColor = gocui.ColorBlack | gocui.AttrBold
+			v.SelBgColor = gocui.ColorWhite
 
-			fmt.Fprintf(v, formatHeader, "Pod Name", "CPU (used)", "CPU (limit)", "Memory (used)", "Memory (limit)", " ")
+			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (limit)", "MEM (used)", "MEM (limit)", " ")
 
 			podMetricsList.OrderByHighestMemUsage()
 			for _, item := range podMetricsList.Pods {
@@ -107,8 +109,9 @@ func drawTotals(g *gocui.Gui, v *gocui.View) error {
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
-	if v, err := g.SetView("totals", -1, -1, maxX, 5); err != nil {
-
+	if v, err := g.SetView("totals", 1, 0, maxX-1, 5); err != nil {
+		v.Frame = true
+		v.Title = "Kubernetes (minikube)"
 		if err != gocui.ErrUnknownView {
 			return err
 		}
@@ -117,11 +120,14 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-	if _, err := g.SetView("main", -1, 5, maxX, maxY); err != nil {
+	if v, err := g.SetView("main", 1, 5, maxX-1, maxY); err != nil {
 
 		if err != gocui.ErrUnknownView {
 			return err
 		}
+
+		v.Frame = false
+
 	}
 
 	return nil
