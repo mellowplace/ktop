@@ -3,6 +3,7 @@ package ktop
 import (
 	"sort"
 	"strconv"
+	"time"
 
 	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
@@ -15,7 +16,8 @@ type SimplifiedPodMetrics struct {
 }
 
 type SimplifiedPodMetricsList struct {
-	Pods []*SimplifiedPodMetrics
+	Pods   []*SimplifiedPodMetrics
+	Uptime time.Time
 }
 
 func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
@@ -39,7 +41,8 @@ func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
 
 func NewSimplifiedPodMetricsList(list *metrics.PodMetricsList) *SimplifiedPodMetricsList {
 	simpleList := SimplifiedPodMetricsList{
-		Pods: make([]*SimplifiedPodMetrics, 0),
+		Pods:   make([]*SimplifiedPodMetrics, 0),
+		Uptime: time.Now(),
 	}
 
 	for _, p := range list.Items {
