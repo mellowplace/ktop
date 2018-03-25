@@ -9,6 +9,13 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
+const (
+	OrderMemHigh = 0x1
+	OrderMemLow  = 0x2
+	OrderCPUHigh = 0x3
+	OrderCPULow  = 0x4
+)
+
 var (
 	metricsClose    = make(chan int, 1)
 	metricsReceive  = make(chan *SimplifiedPodMetricsList, 1)
@@ -18,6 +25,7 @@ var (
 	podMetricsList  = &SimplifiedPodMetricsList{}
 	kubeSummary     = &KubeSummary{ServerInfo: "connecting..."}
 	kubeContextName = ""
+	ordering        = OrderCPUHigh
 )
 
 func StartUI(kubeConfigFile, kubeContextName, namespace string) error {
@@ -60,6 +68,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			// don't need to do anything here, just set kube summary above
 		case err := <-errorChan:
 			g.Update(func(g *gocui.Gui) error {
+				g.Close()
 				return err
 			})
 			return
@@ -67,7 +76,15 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 
 		g.Update(func(g *gocui.Gui) error {
 
-			v, err := g.View("totals")
+			maxX, _ := g.Size()
+
+			v, err := g.View("help")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintf(v, "%s %s %s %"+strconv.Itoa(maxX)+"s\n", "q = QUIT", "m/M = ORDER BY MEM HIGH/LOW", "c/C = ORDER BY CPU HIGH/LOW", " ")
+
+			v, err = g.View("totals")
 
 			if err != nil {
 				return err
@@ -80,7 +97,6 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 			v.Clear()
 
-			maxX, _ := g.Size()
 			format := "%50s %10s %10s %15s %15s"
 			// format header just makes sure we draw right across the available screen
 			// to get the highlight all the way across
@@ -91,7 +107,17 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 
 			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (limit)", "MEM (used)", "MEM (limit)", " ")
 
-			podMetricsList.OrderByHighestMemUsage()
+			switch ordering {
+			case OrderMemHigh:
+				podMetricsList.OrderByHighestMemUsage()
+			case OrderMemLow:
+				podMetricsList.OrderByLowestMemUsage()
+			case OrderCPUHigh:
+				podMetricsList.OrderByHighestCPUUsage()
+			case OrderCPULow:
+				podMetricsList.OrderByLowestCPUUsage()
+			}
+
 			for _, item := range podMetricsList.Pods {
 				fmt.Fprintf(v, format+"\n", item.PodName, item.CPUMillisString(), "-", item.MemoryBytesString(), "-")
 			}
@@ -118,7 +144,18 @@ func drawTotals(g *gocui.Gui, v *gocui.View) error {
 func layout(g *gocui.Gui) error {
 	maxX, maxY := g.Size()
 
-	if v, err := g.SetView("totals", 1, 0, maxX-1, 5); err != nil {
+	if v, err := g.SetView("help", -1, maxY-2, maxX, maxY); err != nil {
+		v.Frame = false
+		if err != gocui.ErrUnknownView {
+			return err
+		}
+
+		v.Highlight = true
+		v.SelFgColor = gocui.ColorWhite
+		v.SelBgColor = gocui.ColorBlack
+	}
+
+	if v, err := g.SetView("totals", 1, 0, maxX-1, 6); err != nil {
 		v.Frame = true
 		if err != gocui.ErrUnknownView {
 			return err
@@ -128,7 +165,7 @@ func layout(g *gocui.Gui) error {
 
 	}
 
-	if v, err := g.SetView("main", 1, 5, maxX-1, maxY); err != nil {
+	if v, err := g.SetView("main", 1, 6, maxX-1, maxY-2); err != nil {
 
 		if err != gocui.ErrUnknownView {
 			return err
@@ -151,6 +188,18 @@ func keybindings(g *gocui.Gui) error {
 	if err := g.SetKeybinding("", gocui.KeySpace, gocui.ModNone, pokeTimer); err != nil {
 		return err
 	}
+	if err := g.SetKeybinding("", 'm', gocui.ModNone, orderByMemHigh); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", 'M', gocui.ModNone, orderByMemLow); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", 'c', gocui.ModNone, orderByCPUHigh); err != nil {
+		return err
+	}
+	if err := g.SetKeybinding("", 'C', gocui.ModNone, orderByCPULow); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -160,6 +209,30 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 }
 
 func pokeTimer(g *gocui.Gui, v *gocui.View) error {
+	timerChan <- 1
+	return nil
+}
+
+func orderByMemHigh(g *gocui.Gui, v *gocui.View) error {
+	ordering = OrderMemHigh
+	timerChan <- 1
+	return nil
+}
+
+func orderByMemLow(g *gocui.Gui, v *gocui.View) error {
+	ordering = OrderMemLow
+	timerChan <- 1
+	return nil
+}
+
+func orderByCPUHigh(g *gocui.Gui, v *gocui.View) error {
+	ordering = OrderCPUHigh
+	timerChan <- 1
+	return nil
+}
+
+func orderByCPULow(g *gocui.Gui, v *gocui.View) error {
+	ordering = OrderCPULow
 	timerChan <- 1
 	return nil
 }

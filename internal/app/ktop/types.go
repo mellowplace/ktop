@@ -69,6 +69,24 @@ func (list *SimplifiedPodMetricsList) OrderByHighestMemUsage() {
 	})
 }
 
+func (list *SimplifiedPodMetricsList) OrderByLowestMemUsage() {
+	sort.Slice(list.Pods, func(i, j int) bool {
+		return list.Pods[i].MemoryBytes < list.Pods[j].MemoryBytes
+	})
+}
+
+func (list *SimplifiedPodMetricsList) OrderByHighestCPUUsage() {
+	sort.Slice(list.Pods, func(i, j int) bool {
+		return list.Pods[i].CPUMillis > list.Pods[j].CPUMillis
+	})
+}
+
+func (list *SimplifiedPodMetricsList) OrderByLowestCPUUsage() {
+	sort.Slice(list.Pods, func(i, j int) bool {
+		return list.Pods[i].CPUMillis < list.Pods[j].CPUMillis
+	})
+}
+
 func (m *SimplifiedPodMetrics) CPUMillisString() string {
 	return strconv.FormatUint(m.CPUMillis, 10)
 }
