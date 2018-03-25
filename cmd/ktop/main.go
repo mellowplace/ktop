@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -10,22 +9,29 @@ import (
 	"github.com/mellowplace/ktop/internal/app/ktop"
 )
 
-func main() {
-	kubeContext := flag.String("context", "", "kubectl context name, empty will use the current")
-	var kubeConfig *string
+var (
+	kubeContext string
+	namespace   string
+	kubeConfig  string
+)
+
+func init() {
+	flag.StringVar(&kubeContext, "context", "", "kubectl context name, empty will use the current")
+	flag.StringVar(&namespace, "namespace", "", "which namespace to grab Pod metrics from")
 	if home := homeDir(); home != "" {
-		kubeConfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		flag.StringVar(&kubeConfig, "kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
 	} else {
-		kubeConfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		flag.StringVar(&kubeConfig, "kubeconfig", "", "absolute path to the kubeconfig file")
 	}
+}
+
+func main() {
 
 	flag.Parse()
 
-	fmt.Println(*kubeContext)
-
 	// use the current context in kubeconfig
 
-	err := ktop.StartUI(*kubeConfig, *kubeContext, "kube-system")
+	err := ktop.StartUI(kubeConfig, kubeContext, namespace)
 
 	if err != nil {
 		log.Fatalf("%v", err)
