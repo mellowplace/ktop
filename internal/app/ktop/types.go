@@ -1,10 +1,12 @@
 package ktop
 
 import (
+	"math"
 	"sort"
 	"strconv"
 	"time"
 
+	"github.com/dustin/go-humanize"
 	metrics "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 )
 
@@ -18,6 +20,15 @@ type SimplifiedPodMetrics struct {
 type SimplifiedPodMetricsList struct {
 	Pods   []*SimplifiedPodMetrics
 	Uptime time.Time
+}
+
+type KubeSummary struct {
+	TotalAllocatableCPUMillis   uint64
+	TotalAllocatableMemoryBytes uint64
+	TotalUsedCPUMillis          uint64
+	TotalUsedMemoryBytes        uint64
+	TotalNodes                  int
+	ServerInfo                  string
 }
 
 func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
@@ -63,5 +74,23 @@ func (m *SimplifiedPodMetrics) CPUMillisString() string {
 }
 
 func (m *SimplifiedPodMetrics) MemoryBytesString() string {
-	return strconv.FormatUint(m.MemoryBytes, 10)
+	return humanize.Bytes(m.MemoryBytes)
+}
+
+func (s *KubeSummary) GetTotalAllocatableMemory() string {
+	return humanize.Bytes(s.TotalAllocatableMemoryBytes)
+}
+
+func (s *KubeSummary) GetTotalUsedMemory() string {
+	return humanize.Bytes(s.TotalUsedMemoryBytes)
+}
+
+func (s *KubeSummary) GetMemPercentUsed() string {
+	dec := float64(s.TotalUsedMemoryBytes) / float64(s.TotalAllocatableMemoryBytes) * 100
+	return strconv.FormatFloat(math.Ceil(dec), 'f', 0, 64) + "%"
+}
+
+func (s *KubeSummary) GetCPUPercentUsed() string {
+	dec := float64(s.TotalUsedCPUMillis) / float64(s.TotalAllocatableCPUMillis) * 100
+	return strconv.FormatFloat(math.Ceil(dec), 'f', 0, 64) + "%"
 }
