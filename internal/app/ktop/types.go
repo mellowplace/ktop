@@ -19,7 +19,7 @@ type SimplifiedPodMetrics struct {
 
 type SimplifiedPodMetricsList struct {
 	Pods   []*SimplifiedPodMetrics
-	Uptime time.Time
+	PollTime time.Time
 }
 
 type KubeSummary struct {
@@ -53,7 +53,7 @@ func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
 func NewSimplifiedPodMetricsList(list *metrics.PodMetricsList) *SimplifiedPodMetricsList {
 	simpleList := SimplifiedPodMetricsList{
 		Pods:   make([]*SimplifiedPodMetrics, 0),
-		Uptime: time.Now(),
+		PollTime: time.Now(),
 	}
 
 	for _, p := range list.Items {

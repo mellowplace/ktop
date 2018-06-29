@@ -97,7 +97,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 			v.Clear()
 
-			format := "%50s %10s %10s %15s %15s"
+			format := "%-50s %-10s %-10s %-15s %-15s %-20s"
 			// format header just makes sure we draw right across the available screen
 			// to get the highlight all the way across
 			formatHeader := format + "%" + strconv.FormatInt(int64(maxX), 10) + "s\n"
@@ -105,7 +105,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			v.SelFgColor = gocui.ColorBlack | gocui.AttrBold
 			v.SelBgColor = gocui.ColorWhite
 
-			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (limit)", "MEM (used)", "MEM (limit)", " ")
+			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (limit)", "MEM (used)", "MEM (limit)", "Namespace", " ")
 
 			switch ordering {
 			case OrderMemHigh:
@@ -119,7 +119,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 
 			for _, item := range podMetricsList.Pods {
-				fmt.Fprintf(v, format+"\n", item.PodName, item.CPUMillisString(), "-", item.MemoryBytesString(), "-")
+				fmt.Fprintf(v, format+"\n", trimExcess(item.PodName, 50), item.CPUMillisString(), "-", item.MemoryBytesString(), "-", item.Namespace)
 			}
 			return nil
 		})
@@ -134,7 +134,7 @@ func drawTotals(g *gocui.Gui, v *gocui.View) error {
 
 	v.Clear()
 	format := "%40s %s\n"
-	fmt.Fprintf(v, format, "Uptime:", podMetricsList.Uptime.String())
+	fmt.Fprintf(v, format, "Time:", podMetricsList.PollTime.Format(time.RFC850))
 	fmt.Fprintf(v, format, "Total Nodes in Cluster:", strconv.Itoa(kubeSummary.TotalNodes))
 	fmt.Fprintf(v, "%40s %10s / %s (%s)\n", "Memory Usage:", kubeSummary.GetTotalUsedMemory(), kubeSummary.GetTotalAllocatableMemory(), kubeSummary.GetMemPercentUsed())
 	fmt.Fprintf(v, "%40s %10d / %d (%s)\n", "CPU Usage:", kubeSummary.TotalUsedCPUMillis, kubeSummary.TotalAllocatableCPUMillis, kubeSummary.GetCPUPercentUsed())
@@ -241,5 +241,13 @@ func statsTimer() {
 	for {
 		timerChan <- 1
 		time.Sleep(2 * time.Second)
+	}
+}
+
+func trimExcess(input string, maxLength int) string {
+	if len(input) > maxLength {
+		return input[0:maxLength]
+	} else {
+		return input
 	}
 }
