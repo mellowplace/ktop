@@ -119,7 +119,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 
 			for _, item := range podMetricsList.Pods {
-				fmt.Fprintf(v, format+"\n", trimExcess(item.PodName, 50), item.CPUMillisString(), "-", item.MemoryBytesString(), "-", item.Namespace)
+				fmt.Fprintf(v, format+"\n", trimExcess(item.PodName, 50), item.CPUMillisString(), "-", item.MemoryBytesString(), "-", trimExcess(item.Namespace, 20))
 			}
 			return nil
 		})
