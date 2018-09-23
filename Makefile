@@ -11,7 +11,7 @@ install-deps:
 	glide install -v
 
 build:
-	go build ${LDFLAGS} -o ./dist/${GOOS}/${GOARCH}/ktop ./cmd/ktop/main.go
+	go build ${LDFLAGS} -o ./dist/ktop-${GOOS}-${GOARCH} ./cmd/ktop/main.go
 
 cross-compile:
 	$(MAKE) build GOOS=linux GOARCH=amd64
