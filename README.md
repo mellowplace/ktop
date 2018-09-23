@@ -1,8 +1,8 @@
 # ktop
 
-A top clone for Kubernetes.
-
-Currently very much in non-working alpha.
+A top clone for Kubernetes.  Currently tells you CPU and Memory usage of each
+pod in your cluster.  It also tells you how much (if any) CPU & memory each pod
+has requested.
 
 ![ktop](docs/screenshot.png)
 
