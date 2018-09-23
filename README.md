@@ -11,7 +11,7 @@ has requested.
 There are a number of stand-alone binaries for Linux, Windows & Mac.
 
 Download the correct binary for you system from the
-[latest release](../releases/latest).
+[latest release](../../releases/latest).
 
 ## Requirements
 
