@@ -11,14 +11,16 @@ import (
 )
 
 type SimplifiedPodMetrics struct {
-	PodName     string
-	Namespace   string
-	MemoryBytes uint64
-	CPUMillis   uint64 `info:"Measured in Milli CPU's"`
+	PodName              string
+	Namespace            string
+	MemoryBytes          uint64
+	MemoryBytesRequested uint64
+	CPUMillis            uint64 `info:"Measured in Milli CPU's"`
+	CPUMillisRequested   uint64
 }
 
 type SimplifiedPodMetricsList struct {
-	Pods   []*SimplifiedPodMetrics
+	Pods     []*SimplifiedPodMetrics
 	PollTime time.Time
 }
 
@@ -31,13 +33,15 @@ type KubeSummary struct {
 	ServerInfo                  string
 }
 
-func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
+func newSimplifiedPodMetrics(pod *metrics.PodMetrics, podResources *SimplifiedPodResources) *SimplifiedPodMetrics {
 	// calc total byte mem
 	simple := SimplifiedPodMetrics{
-		PodName:     pod.GetName(),
-		Namespace:   pod.GetNamespace(),
-		MemoryBytes: 0,
-		CPUMillis:   0,
+		PodName:              pod.GetName(),
+		Namespace:            pod.GetNamespace(),
+		MemoryBytes:          0,
+		MemoryBytesRequested: podResources.MemoryBytesRequested,
+		CPUMillis:            0,
+		CPUMillisRequested:   podResources.CPUMillisRequested,
 	}
 
 	for _, c := range pod.Containers {
@@ -50,14 +54,18 @@ func newSimplifiedPodMetrics(pod *metrics.PodMetrics) *SimplifiedPodMetrics {
 	return &simple
 }
 
-func NewSimplifiedPodMetricsList(list *metrics.PodMetricsList) *SimplifiedPodMetricsList {
+func NewSimplifiedPodMetricsList(list *metrics.PodMetricsList, podResourceList *PodResourcesList) *SimplifiedPodMetricsList {
 	simpleList := SimplifiedPodMetricsList{
-		Pods:   make([]*SimplifiedPodMetrics, 0),
+		Pods:     make([]*SimplifiedPodMetrics, 0),
 		PollTime: time.Now(),
 	}
 
 	for _, p := range list.Items {
-		simpleList.Pods = append(simpleList.Pods, newSimplifiedPodMetrics(&p))
+		podResources, err := podResourceList.Find(p.GetName(), p.GetNamespace())
+		if err != nil {
+
+		}
+		simpleList.Pods = append(simpleList.Pods, newSimplifiedPodMetrics(&p, podResources))
 	}
 
 	return &simpleList
@@ -91,8 +99,24 @@ func (m *SimplifiedPodMetrics) CPUMillisString() string {
 	return strconv.FormatUint(m.CPUMillis, 10)
 }
 
+func (m *SimplifiedPodMetrics) CPUMillisRequestedString() string {
+	if m.CPUMillisRequested == 0 {
+		return "-"
+	} else {
+		return strconv.FormatUint(m.CPUMillisRequested, 10)
+	}
+}
+
 func (m *SimplifiedPodMetrics) MemoryBytesString() string {
 	return humanize.Bytes(m.MemoryBytes)
+}
+
+func (m *SimplifiedPodMetrics) MemoryBytesRequestedString() string {
+	if m.MemoryBytesRequested == 0 {
+		return "-"
+	} else {
+		return humanize.Bytes(m.MemoryBytesRequested)
+	}
 }
 
 func (s *KubeSummary) GetTotalAllocatableMemory() string {

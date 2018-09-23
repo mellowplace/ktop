@@ -54,7 +54,9 @@ func StartUI(kubeConfigFile, kubeContextName, namespace string) error {
 
 func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gui, timerChan chan int) {
 	go pollKubeSummary(kubeConfigFile, kubeContextName, summaryReceive, metricsClose, errorChan)
-	go pollPodMetrics(kubeConfigFile, kubeContextName, namespace, metricsClose, metricsReceive, errorChan)
+
+	podResourcesList := NewPodResourcesList(kubeConfigFile, kubeContextName)
+	go pollPodMetrics(kubeConfigFile, kubeContextName, namespace, &podResourcesList, metricsClose, metricsReceive, errorChan)
 
 	for {
 
@@ -105,7 +107,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			v.SelFgColor = gocui.ColorBlack | gocui.AttrBold
 			v.SelBgColor = gocui.ColorWhite
 
-			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (limit)", "MEM (used)", "MEM (limit)", "Namespace", " ")
+			fmt.Fprintf(v, formatHeader, "POD NAME", "CPU (used)", "CPU (req)", "MEM (used)", "MEM (req)", "Namespace", " ")
 
 			switch ordering {
 			case OrderMemHigh:
@@ -119,7 +121,7 @@ func collectStats(kubeConfigFile, kubeContextName, namespace string, g *gocui.Gu
 			}
 
 			for _, item := range podMetricsList.Pods {
-				fmt.Fprintf(v, format+"\n", trimExcess(item.PodName, 50), item.CPUMillisString(), "-", item.MemoryBytesString(), "-", trimExcess(item.Namespace, 20))
+				fmt.Fprintf(v, format+"\n", trimExcess(item.PodName, 50), item.CPUMillisString(), item.CPUMillisRequestedString(), item.MemoryBytesString(), item.MemoryBytesRequestedString(), trimExcess(item.Namespace, 20))
 			}
 			return nil
 		})

@@ -2,6 +2,7 @@ package ktop
 
 import (
 	"fmt"
+
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/oidc"
@@ -11,7 +12,7 @@ import (
 	metricsclientset "k8s.io/metrics/pkg/client/clientset_generated/clientset"
 )
 
-func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, metricsClose chan int, metricsReceive chan *SimplifiedPodMetricsList, errorChan chan error) {
+func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, podResourceList *PodResourcesList, metricsClose chan int, metricsReceive chan *SimplifiedPodMetricsList, errorChan chan error) {
 
 	defer close(metricsReceive)
 	defer close(errorChan)
@@ -39,7 +40,7 @@ func pollPodMetrics(kubeConfigFile, kubeContextName, namespace string, metricsCl
 			if err != nil {
 				errorChan <- err
 			} else {
-				metricsReceive <- NewSimplifiedPodMetricsList(list)
+				metricsReceive <- NewSimplifiedPodMetricsList(list, podResourceList)
 			}
 		}
 	}
