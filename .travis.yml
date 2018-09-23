@@ -11,6 +11,10 @@ deploy:
   provider: releases
   api_key:
     secure: Swu6+2eJf+OQZjlVu9v+3rtADu3Hus4lMoJXIyMjNkP0A78jQpUps1u50kKsyT3VQcO2CwP/p/u//UMKhJxizSkU66kj87E8UI+NRCAR6ZrIqXortAM6mAyNDcqHAR8lyj7VTkghMZMUYHrfnnhIZQHq7YDfzhCYRhppnvLN1p5f0NHRujse87TdUv/DBU7KNWuxIU4EczVtp5OtOW04seULKm8hBP4keoPTOPARm8uWgDqIv04csmWk/A+J/CixNhFbJQwIPsckmLgRK1xNHm2/MaIzAAxrtKSUcNYCBA58LMl5LhhptwKmXm5tzKGAwh8fPY/e9HVN0xKs/r8uXXxuX1hQONb1UH5xjlhgA13XUZ5ehi36gVprT+KvsxzcoKuoUeLgKQa61Cj7QZ7qhN/P2TN20iuYuaOV1+xKYcnuu2K34QWJ8l/0QYuuTuNecS69jdTc/DwVnRRbvxlV6bojVqKetEmZx2gJPccXQUQ1EXTqIKkY9qhqENskqYJXAy6p+zTSfz0SvDtJUek+4MjObBYqcejiNDNpIRM7rcrUc3asRVAuf2uAbbEss6WRQL2Fn7jpPVotUz9DqvmsfDR91oD9P7JU8DLB/D2oBntfa0UUJA3P9qAJ3IsTqpEWQv17CTyL4buaEiCpHMRAE8/4C952UtpVIRLaidfkx98=
-  file: "./dist/linux/amd64/ktop"
+  file:
+    - ./dist/linux/amd64/ktop
+    - ./dist/darwin/amd64/ktop
+    - ./dist/windows/amd64/ktop
+  skip_cleanup: true
   on:
-    repo: mellowplace/ktop
+    tags: true
